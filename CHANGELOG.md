@@ -1,3 +1,15 @@
+# Version 0.13.0 (2020-11-03)
+
+- Update `cpal` to [0.13](https://github.com/RustAudio/cpal/blob/master/CHANGELOG.md#version-0130-2020-10-28).
+- Add Android support.
+
+# Version 0.12.0 (2020-10-05)
+
+- Breaking: Update `cpal` to [0.12](https://github.com/RustAudio/cpal/blob/master/CHANGELOG.md#version-0120-2020-07-09).
+- Breaking: Rework API removing global "rodio audio processing" thread & adapting to the upstream cpal API changes.
+- Add new_X format specific methods to Decoder.
+- Fix resampler dependency on internal `Vec::capacity` behaviour.
+
 # Version 0.11.0 (2020-03-16)
 
 - Update `lewton` to [0.10](https://github.com/RustAudio/lewton/blob/master/CHANGELOG.md#release-0100---january-30-2020).

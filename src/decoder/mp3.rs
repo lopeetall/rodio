@@ -1,7 +1,7 @@
 use std::io::{Read, Seek};
 use std::time::Duration;
 
-use Source;
+use crate::Source;
 
 use minimp3::{Decoder, Frame};
 
@@ -28,11 +28,14 @@ where
             current_frame_offset: 0,
         })
     }
+    pub fn into_inner(self) -> R {
+        self.decoder.into_inner()
+    }
 }
 
 impl<R> Source for Mp3Decoder<R>
 where
-    R: Read + Seek
+    R: Read + Seek,
 {
     #[inline]
     fn current_frame_len(&self) -> Option<usize> {
@@ -57,18 +60,18 @@ where
 
 impl<R> Iterator for Mp3Decoder<R>
 where
-    R: Read + Seek
+    R: Read + Seek,
 {
     type Item = i16;
 
     #[inline]
     fn next(&mut self) -> Option<i16> {
         if self.current_frame_offset == self.current_frame.data.len() {
-            self.current_frame_offset = 0;
             match self.decoder.next_frame() {
                 Ok(frame) => self.current_frame = frame,
                 _ => return None,
             }
+            self.current_frame_offset = 0;
         }
 
         let v = self.current_frame.data[self.current_frame_offset];

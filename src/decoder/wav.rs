@@ -1,7 +1,7 @@
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use Source;
+use crate::Source;
 
 use hound::{SampleFormat, WavReader};
 
@@ -38,6 +38,9 @@ where
             channels: spec.channels,
         })
     }
+    pub fn into_inner(self) -> R {
+        self.reader.reader.into_inner()
+    }
 }
 
 struct SamplesIterator<R>
@@ -70,6 +73,10 @@ where
                 self.samples_read += 1;
                 i24_to_i16(value.unwrap_or(0))
             }),
+            (SampleFormat::Int, 8) => self.reader.samples().next().map(|value| {
+                self.samples_read += 1;
+                i8_to_i16(value.unwrap_or(0))
+            }),
             (sample_format, bits_per_sample) => panic!(
                 "Unimplemented wav spec: {:?}, {}",
                 sample_format, bits_per_sample
@@ -84,11 +91,7 @@ where
     }
 }
 
-impl<R> ExactSizeIterator for SamplesIterator<R>
-where
-    R: Read + Seek,
-{
-}
+impl<R> ExactSizeIterator for SamplesIterator<R> where R: Read + Seek {}
 
 impl<R> Source for WavDecoder<R>
 where
@@ -111,8 +114,8 @@ where
 
     #[inline]
     fn total_duration(&self) -> Option<Duration> {
-        let ms = self.len() * 1000 / (self.channels as usize * self.sample_rate as usize);
-        Some(Duration::from_millis(ms as u64))
+        let ms = self.len() as u64 * 1000 / (self.channels as u64 * self.sample_rate as u64);
+        Some(Duration::from_millis(ms))
     }
 }
 
@@ -133,11 +136,7 @@ where
     }
 }
 
-impl<R> ExactSizeIterator for WavDecoder<R>
-where
-    R: Read + Seek,
-{
-}
+impl<R> ExactSizeIterator for WavDecoder<R> where R: Read + Seek {}
 
 /// Returns true if the stream contains WAV data, then resets it to where it was.
 fn is_wave<R>(mut data: R) -> bool
@@ -165,9 +164,15 @@ fn f32_to_i16(f: f32) -> i16 {
 }
 
 /// Returns a 24 bit WAV int as an i16. Note that this is a 24 bit integer, not a
-/// 32 bit one. 24 bit ints are in the range [−8,388,608, 8,388,607] while i16s 
+/// 32 bit one. 24 bit ints are in the range [−8,388,608, 8,388,607] while i16s
 /// are in the range [-32768, 32767]. Note that this function definitely causes
 /// precision loss but hopefully this isn't too audiable when actually playing?
 fn i24_to_i16(i: i32) -> i16 {
     (i >> 8) as i16
+}
+
+/// Returns an 8-bit WAV int as an i16. This scales the sample value by a factor
+/// of 256.
+fn i8_to_i16(i: i8) -> i16 {
+    i as i16 * 256
 }

@@ -3,12 +3,12 @@ use std::time::Duration;
 
 use cpal;
 
-use conversions::ChannelCountConverter;
-use conversions::DataConverter;
-use conversions::SampleRateConverter;
+use crate::conversions::ChannelCountConverter;
+use crate::conversions::DataConverter;
+use crate::conversions::SampleRateConverter;
 
-use Sample;
-use Source;
+use crate::Sample;
+use crate::Source;
 
 /// An iterator that reads from a `Source` and converts the samples to a specific rate and
 /// channels count.
@@ -36,7 +36,9 @@ where
 {
     #[inline]
     pub fn new(
-        input: I, target_channels: u16, target_sample_rate: u32,
+        input: I,
+        target_channels: u16,
+        target_sample_rate: u32,
     ) -> UniformSourceIterator<I, D> {
         let total_duration = input.total_duration();
         let input = UniformSourceIterator::bootstrap(input, target_channels, target_sample_rate);
@@ -51,9 +53,12 @@ where
 
     #[inline]
     fn bootstrap(
-        input: I, target_channels: u16, target_sample_rate: u32,
+        input: I,
+        target_channels: u16,
+        target_sample_rate: u32,
     ) -> DataConverter<ChannelCountConverter<SampleRateConverter<Take<I>>>, D> {
-        let frame_len = input.current_frame_len();
+        // Limit the frame length to something reasonable
+        let frame_len = input.current_frame_len().map(|x| x.min(32768));
 
         let from_channels = input.channels();
         let from_sample_rate = input.sample_rate();
@@ -89,7 +94,8 @@ where
             return Some(value);
         }
 
-        let input = self.inner
+        let input = self
+            .inner
             .take()
             .unwrap()
             .into_inner()
@@ -183,8 +189,4 @@ where
     }
 }
 
-impl<I> ExactSizeIterator for Take<I>
-where
-    I: ExactSizeIterator,
-{
-}
+impl<I> ExactSizeIterator for Take<I> where I: ExactSizeIterator {}

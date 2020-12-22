@@ -2,7 +2,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::mem;
 use std::time::Duration;
 
-use Source;
+use crate::Source;
 
 use claxon::FlacReader;
 
@@ -47,6 +47,9 @@ where
             samples: spec.samples,
         })
     }
+    pub fn into_inner(self) -> R {
+        self.reader.into_inner()
+    }
 }
 
 impl<R> Source for FlacDecoder<R>
@@ -72,7 +75,8 @@ where
     fn total_duration(&self) -> Option<Duration> {
         // `samples` in FLAC means "inter-channel samples" aka frames
         // so we do not divide by `self.channels` here.
-        self.samples.map(|s| Duration::from_micros(s * 1_000_000 / self.sample_rate as u64))
+        self.samples
+            .map(|s| Duration::from_micros(s * 1_000_000 / self.sample_rate as u64))
     }
 }
 
@@ -109,7 +113,7 @@ where
                 Ok(Some(block)) => {
                     self.current_block_channel_len = (block.len() / block.channels()) as usize;
                     self.current_block = block.into_buffer();
-                },
+                }
                 _ => return None,
             }
         }
